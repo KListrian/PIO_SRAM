@@ -43,6 +43,7 @@ pico_set_program_version(PIO_SRAM "0.1")
 # Generate PIO header
 pico_generate_pio_header(PIO_SRAM ${CMAKE_CURRENT_LIST_DIR}/Address.pio)
 
+target_link_libraries(PIO_SRAM pico_multicore pico_stdlib hardware_pio hardware_sync)
 
 # Modify the below lines to enable/disable output over UART/USB
 pico_enable_stdio_uart(PIO_SRAM 0)
@@ -60,6 +61,5 @@ target_include_directories(PIO_SRAM PRIVATE
 # Add any user requested libraries
 target_link_libraries(PIO_SRAM 
         hardware_pio
-        hardware_clocks
         )
 pico_add_extra_outputs(PIO_SRAM)
