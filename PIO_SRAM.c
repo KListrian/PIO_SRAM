@@ -18,7 +18,7 @@ void __not_in_flash_func(blink)()
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
     sleep_ms(800);
     gpio_put(PICO_DEFAULT_LED_PIN, 0);
-    sleep_ms(300);
+    sleep_ms(600);
 }
 
 int __not_in_flash_func(main)()
