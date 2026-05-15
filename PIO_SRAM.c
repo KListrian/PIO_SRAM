@@ -11,31 +11,37 @@
 
 void __not_in_flash_func(core1_entry)()
 {
+    volatile uint8_t *light = &sram[0x1c00];    // light points ta memory location voliatile makes sure it passes between cores
+
+    while (true)
+    {
+        gpio_put(PICO_DEFAULT_LED_PIN, *light == 0x55); // 0x55 must be set in 6502 assembler blink led
+        tight_loop_contents();
+    }
 }
 
-void __not_in_flash_func(blink)()
+void __not_in_flash_func(blink_default_led)()
 {
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    sleep_ms(800);
+    busy_wait_ms(200);
     gpio_put(PICO_DEFAULT_LED_PIN, 0);
-    sleep_ms(600);
+    busy_wait_ms(200);
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
+    busy_wait_ms(200);
+    gpio_put(PICO_DEFAULT_LED_PIN, 0);
+    busy_wait_ms(200);
+    gpio_put(PICO_DEFAULT_LED_PIN, 1);
+    busy_wait_ms(800);
+    gpio_put(PICO_DEFAULT_LED_PIN, 0);
 }
 
 int __not_in_flash_func(main)()
 {
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    blink_default_led();
 
-    blink();
-    blink();
-
-#ifdef DEBUG
-    stdio_init_all();   // Initialize stdio (USB and UART if available)
-#else
-    save_and_disable_interrupts();            // disables the interrupts for this core
-#endif
-
-//    multicore_launch_core1(core1_entry);
+    multicore_launch_core1(core1_entry);
 
     /* Initialize Data Bus (GPIO 0-7) for software (SIO) control */
     for (int i = 0; i < 8; i++)
@@ -54,12 +60,17 @@ int __not_in_flash_func(main)()
     const volatile uint32_t *pio_fifo = &pio->rxf[sm];
     const uint32_t data_mask = 0xFF;
     const uint32_t clock_pin_mask = (1u << 22);
+
+#ifdef DEBUG
+    stdio_init_all();   // Initialize stdio (USB and UART if available)
+#else
+    save_and_disable_interrupts();
+#endif
     
     while (true)
     {
         // Wait for a new address sample from the PIO
         while (pio_sm_is_rx_fifo_empty(pio, sm));
-        // while (pio->fstat & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm)));
 
         uint32_t address_raw = *pio_fifo;
         uint32_t address = address_raw & 0x1FFF;

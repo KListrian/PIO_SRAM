@@ -4,7 +4,13 @@ start	ldx #$77
 
 *=$01c0
 loop
-		inc light
+		lda #$00
+		sta light
+		nop
+		nop
+		lda #$55
+		sta light
+		nop
 		jmp loop
 		
 		
