@@ -50,16 +50,16 @@ int __not_in_flash_func(main)()
         gpio_set_dir(i, GPIO_IN);
     }
 
-    /* Address bus 8 - 22 (Address, RW, Clock) */
+    /* Address bus GPIO 8-21 (Address, RW), Clock GPIO 28 */
     PIO pio = pio0;                                     // select one of two pios
     uint address_offset = pio_add_program(pio, &Address_program); // Load program
     uint sm = pio_claim_unused_sm(pio, true);           // Claim a state machine
-    Address_program_init(pio, sm, address_offset, 8);
+    Address_program_init(pio, sm, address_offset, 8, 28);
 
     // Optimized pointers and masks for the tight loop
     const volatile uint32_t *pio_fifo = &pio->rxf[sm];
     const uint32_t data_mask = 0xFF;
-    const uint32_t clock_pin_mask = (1u << 22);
+    const uint32_t clock_pin_mask = (1u << 28);
 
 #ifdef DEBUG
     stdio_init_all();   // Initialize stdio (USB and UART if available)
@@ -81,7 +81,7 @@ int __not_in_flash_func(main)()
             gpio_put_masked(data_mask, sram[address]);
             gpio_set_dir_out_masked(data_mask);
             
-            // Wait for Clock (GPIO 22) to go low (end of cycle)
+            // Wait for Clock (GPIO 28) to go low (end of cycle)
             while (sio_hw->gpio_in & clock_pin_mask);
             
             gpio_set_dir_in_masked(data_mask);
