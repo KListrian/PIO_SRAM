@@ -50,7 +50,7 @@ int __not_in_flash_func(main)()
         gpio_set_dir(i, GPIO_IN);
     }
 
-    /* Address bus GPIO 8-20, R/W GPIO 27, Clock GPIO 28 */
+    /* Address bus GPIO 8-22, R/W GPIO 27, Clock GPIO 28 */
     PIO pio = pio0;                                     // select one of two pios
     uint address_offset = pio_add_program(pio, &Address_program); // Load program
     uint sm = pio_claim_unused_sm(pio, true);           // Claim a state machine
@@ -73,7 +73,7 @@ int __not_in_flash_func(main)()
         while (pio_sm_is_rx_fifo_empty(pio, sm));
 
         uint32_t address_raw = *pio_fifo;
-        uint32_t address = address_raw & 0x1FFF;
+        uint32_t address = address_raw & 0x7FFF;
 
         if ((address_raw >> 19) & 1)                    // 19 = R/W
         {

@@ -18,7 +18,7 @@ loop
 *=$1c00
 light	.byte $00
 
-*=$1ffa
+*=$7ffa
 		.byte $00,$00	; nmi
 		.byte $c0,$01	; reset
 		.byte $00,$00	; irq
