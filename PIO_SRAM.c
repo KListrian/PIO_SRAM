@@ -50,11 +50,11 @@ int __not_in_flash_func(main)()
         gpio_set_dir(i, GPIO_IN);
     }
 
-    /* Address bus GPIO 8-21 (Address, RW), Clock GPIO 28 */
+    /* Address bus GPIO 8-20, R/W GPIO 27, Clock GPIO 28 */
     PIO pio = pio0;                                     // select one of two pios
     uint address_offset = pio_add_program(pio, &Address_program); // Load program
     uint sm = pio_claim_unused_sm(pio, true);           // Claim a state machine
-    Address_program_init(pio, sm, address_offset, 8, 28);
+    Address_program_init(pio, sm, address_offset, 8, 27, 28);
 
     // Optimized pointers and masks for the tight loop
     const volatile uint32_t *pio_fifo = &pio->rxf[sm];
@@ -75,7 +75,7 @@ int __not_in_flash_func(main)()
         uint32_t address_raw = *pio_fifo;
         uint32_t address = address_raw & 0x1FFF;
 
-        if ((address_raw >> 13) & 1)
+        if ((address_raw >> 19) & 1)                    // 19 = R/W
         {
             // Read Cycle: SRAM -> Bus
             gpio_put_masked(data_mask, sram[address]);
