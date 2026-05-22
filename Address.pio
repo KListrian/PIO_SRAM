@@ -1,13 +1,15 @@
 
-; Address PIO - reads address pins and pushes to RX FIFO
-; 15 address pins for 32KB RAM + RW status pin (GPIO 27)
+; Address PIO - reads data, address pins, and R/W, then pushes to RX FIFO
+; Data bus is GPIO 0-7.
+; 16 address pins for 64KB RAM: GPIO 8-22 are A0-A14, GPIO 26 is A15.
+; R/W status is GPIO 27.
 ; GPIO 28 is used as a Clock pin to synchronize sampling.
 
 .program Address
 
 .wrap_target
     wait 1 gpio 28 [8]  ; Wait for Clock (GPIO 28) to go High
-    in pins, 20         ; Shift GPIO 8-27 into ISR (15 address bits + RW on GPIO 27)
+    in pins, 28         ; Shift GPIO 0-27 into ISR (data, address, A15, R/W)
     push block          ; Push to RX FIFO (blocking)
     wait 0 gpio 28      ; Wait for Clock to go Low to prevent multiple samples in one cycle
 .wrap
@@ -18,7 +20,7 @@ static inline void Address_program_init(PIO pio, uint sm, uint offset, uint pin,
 {
     pio_sm_config c = Address_program_get_default_config(offset);
 
-    sm_config_set_in_pins(&c, pin);          // set input pins base
+    sm_config_set_in_pins(&c, 0);            // sample GPIO 0-27 into one timestamped word
     
     // Shift left (false) so data ends up in the lower bits (LSB)
     sm_config_set_in_shift(&c, false, false, 32);
@@ -27,9 +29,11 @@ static inline void Address_program_init(PIO pio, uint sm, uint offset, uint pin,
     {
         pio_gpio_init(pio, pin + i);        // init so gpio is connected to pio
     }
+    pio_gpio_init(pio, pin + 18);           // GPIO 26 is A15
     pio_gpio_init(pio, rw_pin);
     pio_gpio_init(pio, clock_pin);
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 15, false); // Set the GPIO pins as input
+    pio_sm_set_consecutive_pindirs(pio, sm, pin + 18, 1, false);
     pio_sm_set_consecutive_pindirs(pio, sm, rw_pin, 1, false);
     pio_sm_set_consecutive_pindirs(pio, sm, clock_pin, 1, false);
 

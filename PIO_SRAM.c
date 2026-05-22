@@ -16,30 +16,15 @@ void __not_in_flash_func(core1_entry)()
     while (true)
     {
         gpio_put(PICO_DEFAULT_LED_PIN, *light == 0x55); // 0x55 must be set in 6502 assembler blink led
-        tight_loop_contents();
+        busy_wait_ms(200);
+//      tight_loop_contents();
     }
-}
-
-void __not_in_flash_func(blink_default_led)()
-{
-    gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    busy_wait_ms(200);
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
-    busy_wait_ms(200);
-    gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    busy_wait_ms(200);
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
-    busy_wait_ms(200);
-    gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    busy_wait_ms(800);
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
 }
 
 int __not_in_flash_func(main)()
 {
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-    blink_default_led();
 
     multicore_launch_core1(core1_entry);
 
@@ -50,7 +35,7 @@ int __not_in_flash_func(main)()
         gpio_set_dir(i, GPIO_IN);
     }
 
-    /* Address bus GPIO 8-22, R/W GPIO 27, Clock GPIO 28 */
+    /* Address bus GPIO 8-22 plus GPIO 26 as A15, R/W GPIO 27, Clock GPIO 28 */
     PIO pio = pio0;                                     // select one of two pios
     uint address_offset = pio_add_program(pio, &Address_program); // Load program
     uint sm = pio_claim_unused_sm(pio, true);           // Claim a state machine
@@ -61,11 +46,8 @@ int __not_in_flash_func(main)()
     const uint32_t data_mask = 0xFF;
     const uint32_t clock_pin_mask = (1u << 28);
 
-#ifdef DEBUG
-    stdio_init_all();   // Initialize stdio (USB and UART if available)
-#else
+//    stdio_init_all();   // Initialize stdio (USB and UART if available)
     save_and_disable_interrupts();
-#endif
     
     while (true)
     {
@@ -73,9 +55,9 @@ int __not_in_flash_func(main)()
         while (pio_sm_is_rx_fifo_empty(pio, sm));
 
         uint32_t address_raw = *pio_fifo;
-        uint32_t address = address_raw & 0x7FFF;
+        uint32_t address = ((address_raw >> 8) & 0x7FFF) | ((address_raw & (1u << 26)) >> 11); // GPIO 8-22 plus GPIO 26 as A15
 
-        if ((address_raw >> 19) & 1)                    // 19 = R/W
+        if ((address_raw >> 27) & 1)                    // GPIO 27 = R/W
         {
             // Read Cycle: SRAM -> Bus
             gpio_put_masked(data_mask, sram[address]);
@@ -85,24 +67,18 @@ int __not_in_flash_func(main)()
             while (sio_hw->gpio_in & clock_pin_mask);
             
             gpio_set_dir_in_masked(data_mask);
-#ifdef DEBUG
-            printf("Read: %02X address: %04X\n",sram[address],address);
-#endif
+//            printf("Read: %02X address: %04X\n",sram[address],address);
         }
         else
         {
             // Write Cycle: Bus -> SRAM
-            // Wait for Clock high to ensure data bus is stable
-            while (!(sio_hw->gpio_in & clock_pin_mask));
-            
-            sram[address] = (uint8_t)(sio_hw->gpio_in & data_mask);
+            // Use the data sampled by PIO at the same instant as the address.
+            sram[address] = (uint8_t)(address_raw & data_mask);
             
             // Wait for Clock low to end the cycle
             while (sio_hw->gpio_in & clock_pin_mask);
 
-#ifdef DEBUG
-            printf("Write: %02X address: %04X\n", sram[address], address);
-#endif
+//            printf("Write: %02X address: %04X\n", sram[address], address);
         }
     }
 }
