@@ -10,14 +10,10 @@
 
 void __not_in_flash_func(core1_entry)()
 {
-    volatile uint8_t *light = &sram[0x1c00];    // light points ta memory location voliatile makes sure it passes between cores
-
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
-    busy_wait_ms(300);
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    busy_wait_ms(800);
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
+    busy_wait_ms(500);
 
+    volatile uint8_t *light = &sram[0x1c00];    // light points ta memory location voliatile makes sure it passes between cores
     while (true)
     {
         gpio_put(PICO_DEFAULT_LED_PIN, (*light) <= 127); // 0x55 must be set in 6502 assembler blink led
@@ -32,12 +28,10 @@ int __not_in_flash_func(main)()
 
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+    gpio_put(PICO_DEFAULT_LED_PIN, 0);
+    busy_wait_ms(500);
 
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
-    busy_wait_ms(300);
-    gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    busy_wait_ms(800);
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
+    multicore_launch_core1(core1_entry);
 
     /* Initialize Data Bus (GPIO 0-7) for software (SIO) control */
     for (int i = 0; i < 8; i++)
@@ -62,7 +56,6 @@ int __not_in_flash_func(main)()
     const uint32_t data_mask = 0xFF;
     const uint32_t clock_pin_mask = (1u << 28);
 
-    multicore_launch_core1(core1_entry);
     // stdio_init_all();   // Initialize stdio (USB and UART if available)
     
     // 3. Disable interrupts on this core. 
