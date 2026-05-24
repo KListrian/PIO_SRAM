@@ -1,17 +1,32 @@
 
-; Address PIO - reads data, address pins, and R/W, then pushes to RX FIFO
+; Address PIO - samples address/RW early, then keeps sampling data while PHI2 is high.
 ; Data bus is GPIO 0-7.
-; 16 address pins for 64KB RAM: GPIO 8-22 are A0-A14, GPIO 26 is A15.
+; 15 address pins for 32KB RAM: GPIO 8-22 are A0-A14.
 ; R/W status is GPIO 27.
 ; GPIO 28 is used as a Clock pin to synchronize sampling.
 
 .program Address
 
 .wrap_target
-    wait 1 gpio 28 [8]  ; Wait for Clock (GPIO 28) to go High
-    in pins, 28         ; Shift GPIO 0-27 into ISR (data, address, A15, R/W)
-    push block          ; Push to RX FIFO (blocking)
-    wait 0 gpio 28      ; Wait for Clock to go Low to prevent multiple samples in one cycle
+    wait 1 gpio 28 [8]  ; Wait for PHI2 high, then let address/RW settle briefly
+    in pins, 28         ; Early snapshot: data, address, unused GPIO 23-26, and R/W
+    mov x, isr          ; Fallback data if PHI2 falls before the first loop sample
+    push block
+
+sample_data:
+    jmp pin do_sample   ; Only sample data while PHI2 is still high
+    mov isr, x          ; Last data sample taken before PHI2 was observed low
+    push block
+    jmp cycle_done
+
+do_sample:
+    mov isr, null       ; Keep only the most recent data sample
+    in pins, 8          ; Sample GPIO 0-7
+    mov x, isr
+    jmp sample_data
+
+cycle_done:
+    nop
 .wrap
 
 % c-sdk {
@@ -24,16 +39,15 @@ static inline void Address_program_init(PIO pio, uint sm, uint offset, uint pin,
     
     // Shift left (false) so data ends up in the lower bits (LSB)
     sm_config_set_in_shift(&c, false, false, 32);
+    sm_config_set_jmp_pin(&c, clock_pin);
 
     for (int i = 0; i < 15; i++)
     {
         pio_gpio_init(pio, pin + i);        // init so gpio is connected to pio
     }
-    pio_gpio_init(pio, pin + 18);           // GPIO 26 is A15
     pio_gpio_init(pio, rw_pin);
     pio_gpio_init(pio, clock_pin);
     pio_sm_set_consecutive_pindirs(pio, sm, pin, 15, false); // Set the GPIO pins as input
-    pio_sm_set_consecutive_pindirs(pio, sm, pin + 18, 1, false);
     pio_sm_set_consecutive_pindirs(pio, sm, rw_pin, 1, false);
     pio_sm_set_consecutive_pindirs(pio, sm, clock_pin, 1, false);
 

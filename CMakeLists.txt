@@ -61,5 +61,6 @@ target_include_directories(PIO_SRAM PRIVATE
 # Add any user requested libraries
 target_link_libraries(PIO_SRAM 
         hardware_pio
+        hardware_clocks
         )
 pico_add_extra_outputs(PIO_SRAM)

@@ -4,13 +4,7 @@ start	ldx #$77
 
 *=$01c0
 loop
-		lda #$00
-		sta light
-		nop
-		nop
-		lda #$55
-		sta light
-		nop
+		inc light
 		jmp loop
 		
 		
@@ -18,7 +12,7 @@ loop
 *=$1c00
 light	.byte $00
 
-*=$fffa
-		.byte $00,$00	; nmi
+*=$7ffa
+		.byte $c0,$01	; nmi
 		.byte $c0,$01	; reset
-		.byte $00,$00	; irq
+		.byte $c0,$01	; irq
