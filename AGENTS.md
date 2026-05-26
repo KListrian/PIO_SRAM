@@ -21,3 +21,8 @@ This file defines custom agents specialized for this Raspberry Pi Pico SRAM/PIO 
 - **Expertise**: CMake builds, ninja compilation, device flashing, debugging targets
 - **Tools**: execute, read, search
 - **Purpose**: Manage build system and device operations
+
+#### 64tass Configuration
+- **64tass executable**: `/c/tmp/64tass.exe` (Windows path: `c:/tmp/64tass.exe`)
+- **Assembly command**: `/c/tmp/64tass.exe -f sram.asm -o sram.bin`
+- **Important**: Do not assume `64tass` is available on `PATH`; always use the absolute path above.
