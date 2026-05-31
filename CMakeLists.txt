@@ -42,6 +42,7 @@ pico_set_program_version(PIO_SRAM "0.1")
 
 # Generate PIO header
 pico_generate_pio_header(PIO_SRAM ${CMAKE_CURRENT_LIST_DIR}/Address.pio)
+pico_generate_pio_header(PIO_SRAM ${CMAKE_CURRENT_LIST_DIR}/serial.pio)
 
 target_link_libraries(PIO_SRAM pico_multicore pico_stdlib hardware_pio hardware_sync)
 
