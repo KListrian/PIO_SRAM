@@ -8,7 +8,7 @@
 .program Address
 
 .wrap_target
-    wait 1 gpio 28 [8]  ; Wait for PHI2 high, then let address/RW settle briefly
+    wait 1 gpio 28 [10]  ; Wait for PHI2 high, then let address/RW settle briefly
     in pins, 28         ; Early snapshot: data, address, unused GPIO 23-26, and R/W
     mov x, isr          ; Fallback data if PHI2 falls before the first loop sample
     push block
