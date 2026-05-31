@@ -16,29 +16,13 @@
 #define SERIAL_PIN 26
 #define SERIAL_BAUD 115200
 
-// High-speed, raw string manipulation conversion
-// Returns a pointer to the START of the valid string inside your buffer
-char* __not_in_flash_func(fast_utoa8)(uint8_t value, char* buffer_end)
+#include "hardware/watchdog.h"
+
+void software_reset()
 {
-    // Start at the very end byte of your buffer
-    char* ptr = buffer_end;
-    *ptr = '\0'; // Set the null terminator
-
-    // Handle the edge case of exactly zero
-    if (value == 0) {
-        *(--ptr) = '0';
-        return ptr;
-    }
-
-    // Main conversion loop using raw ASCII math
-    while (value > 0) {
-        *(--ptr) = (char)('0' + (value % 10));
-        value /= 10;
-    }
-
-    return ptr; // Return pointer to where the string actually begins
+    watchdog_enable(1, 1);
+    while(1); 
 }
-
 
 void __not_in_flash_func(core1_entry)()
 {
@@ -54,7 +38,7 @@ void __not_in_flash_func(core1_entry)()
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
     busy_wait_ms(500);
 
-    serial_program_puts(serial_pio, serial_sm, "\033[2J\033[H*** RP 6502, 32768 bytes memory ***\r\n");
+    serial_program_puts(serial_pio, serial_sm, "\033[2J\033[H*** RP 6502 Terminal ***\r\n");
     serial_program_puts(serial_pio, serial_sm, "READY\r\n");
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
     serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
@@ -80,19 +64,16 @@ void __not_in_flash_func(core1_entry)()
             continue;
         }
 
-        command_len = 0;
+        if (command_text[0]=='R' && command_len==1) software_reset();
 
-        uint8_t light_value = *light;
-        gpio_put(PICO_DEFAULT_LED_PIN, light_value <= 127);
+        command_len = 0;
+        gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);
 
         char serial_text[6];
-        char *serial_number = fast_utoa8(light_value, &serial_text[3]);
-        serial_text[3] = '\r';
-        serial_text[4] = '\n';
-        serial_text[5] = '\0';
+        snprintf(serial_text, sizeof(serial_text), "%u\r\n", *light);
 
         serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-        serial_program_puts(serial_pio, serial_sm, serial_number);
+        serial_program_puts(serial_pio, serial_sm, serial_text);
         serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
         serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
     }
