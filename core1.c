@@ -62,14 +62,16 @@ void __not_in_flash_func(core1_entry)()
             software_reset();
         }
 
-//        command_len = 0;
         gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);
 
-        char serial_text[6];
-        snprintf(serial_text, sizeof(serial_text), "%u\r\n", *light);
+     //   char serial_text[6];
+     //   snprintf(serial_text, sizeof(serial_text), "%u\r\n", *light);
+
+        char cChar = *light;
+        *light = 0;
 
         serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-        serial_program_puts(serial_pio, serial_sm, serial_text);
+        serial_program_putc(serial_pio, serial_sm, cChar);
         serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
         serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
     }
