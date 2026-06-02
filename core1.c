@@ -31,7 +31,6 @@ void __not_in_flash_func(core1_entry)()
     busy_wait_ms(500);
 
     serial_program_puts(serial_pio, serial_sm, "\033[2J\033[H*** RP 6502 Terminal ***\r\n");
-    serial_program_puts(serial_pio, serial_sm, "READY\r\n");
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
     serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
 
@@ -63,7 +62,7 @@ void __not_in_flash_func(core1_entry)()
             software_reset();
         }
 
-        command_len = 0;
+//        command_len = 0;
         gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);
 
         char serial_text[6];
