@@ -56,7 +56,12 @@ void __not_in_flash_func(core1_entry)()
             continue;
         }
 
-        if (command_text[0]=='R' && command_len==1) software_reset();
+        if (command_text[0]=='@' && command_text[1]=='@' && command_text[2]=='r' && command_len==3)
+        {
+            serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+            serial_program_puts(serial_pio, serial_sm, "\r\nReset pi pico\r\n");
+            software_reset();
+        }
 
         command_len = 0;
         gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);
