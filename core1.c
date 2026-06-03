@@ -28,13 +28,17 @@ void __not_in_flash_func(core1_entry)()
     serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
 
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    busy_wait_ms(500);
+    busy_wait_ms(200);
 
-    serial_program_puts(serial_pio, serial_sm, "\033[2J\033[H*** RP 6502 Terminal ***\r\n");
+    char banner_buffer[80];
+    snprintf(banner_buffer, sizeof(banner_buffer), "\033[2J\033[H\033[36m*** terminal at %d baud ***\033[0m\r\n", SERIAL_BAUD);
+    serial_program_puts(serial_pio, serial_sm, banner_buffer);
+
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
     serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
 
-    volatile uint8_t *light = &sram[0x1c00];    // light points ta memory location voliatile makes sure it passes between cores
+    volatile uint8_t *byte = &sram[0x1c00];         // byte points ta memory location voliatile makes sure it passes between cores
+    volatile uint8_t *tr_status = &sram[0x1c01];    // tr_status points ta memory location voliatile makes sure it passes between cores
     char command_text[80];
     size_t command_len = 0;
     while (true)
@@ -48,7 +52,7 @@ void __not_in_flash_func(core1_entry)()
 
         if (command != '\r' && command != '\n')
         {
-            if (command_len + 1 < sizeof(command_text))
+            if (command_len < sizeof(command_text) - 1)
             {
                 command_text[command_len++] = (char)command;
             }
@@ -64,14 +68,24 @@ void __not_in_flash_func(core1_entry)()
 
         gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);
 
-     //   char serial_text[6];
-     //   snprintf(serial_text, sizeof(serial_text), "%u\r\n", *light);
+        char serial_text[80];
+        int i = 0;
 
-        char cChar = *light;
-        *light = 0;
+        uint8_t ch;
+        do
+        {
+            while (*tr_status == 0)
+                tight_loop_contents();
+
+            ch = *byte;
+            serial_text[i++] = (char)ch;
+            *tr_status = 0;
+        } while (ch != 0 && i < (int)sizeof(serial_text) - 1);
+
+        serial_text[i] = '\0';
 
         serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-        serial_program_putc(serial_pio, serial_sm, cChar);
+        serial_program_puts(serial_pio, serial_sm, serial_text);
         serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
         serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
     }

@@ -3,19 +3,29 @@ start	ldx #$77
 		jmp	start
 
 *=$01c0
-		ldy #65
-loop	sty light
-waitz	ldx light
+send	ldy #$00
+next	lda hello,y
+		sta light
+		lda #$01
+		sta status
+		jsr waitz
+		lda hello,y
+		beq send
+		iny
+		jmp next
+
+waitz	lda status
 		bne waitz
-		inc y
-		jmp loop
-		
-		
+		rts
 
 *=$1c00
-light	.byte $00
+light	.byte $0
+status	.byte $0
 
-hello = "READY."
+hello	.text "Hello, world!"
+		.byte 13
+		.byte 10
+		.byte 0
 
 *=$7ffa
 		.byte $c0,$01	; nmi
