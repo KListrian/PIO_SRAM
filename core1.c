@@ -28,65 +28,52 @@ void __not_in_flash_func(core1_entry)()
     serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
 
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    busy_wait_ms(200);
-
-    char banner_buffer[80];
-    snprintf(banner_buffer, sizeof(banner_buffer), "\033[2J\033[H\033[36m*** terminal at %d baud ***\033[0m\r\n", SERIAL_BAUD);
-    serial_program_puts(serial_pio, serial_sm, banner_buffer);
+    serial_program_puts(serial_pio, serial_sm, "\033[2J\033[H");    // clear the terminal
 
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
     serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
 
-    volatile uint8_t *byte = &sram[0x1c00];         // byte points ta memory location voliatile makes sure it passes between cores
-    volatile uint8_t *tr_status = &sram[0x1c01];    // tr_status points ta memory location voliatile makes sure it passes between cores
-    char command_text[80];
-    size_t command_len = 0;
+    volatile uint8_t *byte_from_6502 = &sram[0x1c00];           // byte points ta memory location voliatile makes sure it passes between cores
+    volatile uint8_t *byte_from_6502_status = &sram[0x1c01];    // tr_status points ta memory location voliatile makes sure it passes between cores
+    volatile uint8_t *byte_to_6502 = &sram[0x1c02];             // byte points ta memory location voliatile makes sure it passes between cores
+
+    bool in_tx_mode = false;
+
     while (true)
     {
-        int command = serial_rx_program_getc_timeout_us(serial_pio, serial_rx_sm, 1000);
-        if (command < 0)
-        {
-            tight_loop_contents();
-            continue;
-        }
+        gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);  // toggle led
 
-        if (command != '\r' && command != '\n')
+        // 1. Check if the 6502 has placed a byte for us to send to the terminal
+        if (*byte_from_6502_status == 1)
         {
-            if (command_len < sizeof(command_text) - 1)
-            {
-                command_text[command_len++] = (char)command;
+            if (!in_tx_mode) {
+                serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+                in_tx_mode = true;
             }
-            continue;
+            serial_program_putc(serial_pio, serial_sm, *byte_from_6502);
+            serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
+            
+            // Clear status to signal 6502 that it can send the next character
+            *byte_from_6502_status = 0;
+        }
+        else
+        {
+            // 2. Otherwise, check for terminal input. Only switch to RX if needed.
+            if (in_tx_mode) {
+                serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+                in_tx_mode = false;
+            }
+
+            // Use a short timeout to keep the loop responsive to the 6502
+            int ch = serial_rx_program_getc_timeout_us(serial_pio, serial_rx_sm, 10);
+            
+            // Only update memory if an actual character was received (ch != -1)
+            if (ch != -1)
+            {
+                *byte_to_6502 = (uint8_t)ch;
+            }
         }
 
-        if (command_text[0]=='@' && command_text[1]=='@' && command_text[2]=='r' && command_len==3)
-        {
-            serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-            serial_program_puts(serial_pio, serial_sm, "\r\nReset pi pico\r\n");
-            software_reset();
-        }
-
-        gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);
-
-        char serial_text[80];
-        int i = 0;
-
-        uint8_t ch;
-        do
-        {
-            while (*tr_status == 0)
-                tight_loop_contents();
-
-            ch = *byte;
-            serial_text[i++] = (char)ch;
-            *tr_status = 0;
-        } while (ch != 0 && i < (int)sizeof(serial_text) - 1);
-
-        serial_text[i] = '\0';
-
-        serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-        serial_program_puts(serial_pio, serial_sm, serial_text);
-        serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
-        serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+        tight_loop_contents();
     }
 }
