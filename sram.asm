@@ -1,4 +1,10 @@
-ptr = $20
+; --- Hardware Register Definitions ---
+byte_out = $1C00
+status   = $1C01
+byte_in  = $1C02
+
+; --- Zero Page ---
+ptr      = $20
 
 *=$0000
 start	ldx #$77
@@ -6,6 +12,12 @@ start	ldx #$77
 
 *=$01c0
 reset_entry:
+        lda #<homeclear
+        sta ptr
+        lda #>homeclear
+        sta ptr+1
+        jsr send_str
+
         lda #<resettext
         sta ptr
         lda #>resettext
@@ -13,7 +25,7 @@ reset_entry:
         jsr send_str
 
 inf		lda byte_in
-		cmp #13
+		cmp #97
 		bne inf
 		lda #0
 		sta byte_in
@@ -44,14 +56,18 @@ wait:   lda status      ; Wait for Pi to finish
 done:   rts
 
 *=$1c00
-byte_out .byte $0
-status	 .byte $0
-byte_in  .byte $0
+        .byte $00       ; reserved for byte_out
+        .byte $00       ; reserved for status
+        .byte $00       ; reserved for byte_in
 
-resettext 	.text 27,"[36m","*** 6502 Retro processor ***",27,"[0m",13,10
-		  	.text "Ready",13,10,0
+ESC = $1B
 
-helloworld	.text 27,"[36m","Hello World!",27,"[0m",13,10,0
+resettext 	.text ESC, "[36m", "*** 6502 Retro processor ***", ESC, "[0m", 13, 10
+		  	.text "Ready", 13, 10, 0
+
+helloworld	.text ESC, "[36m", "Hello World!", ESC, "[0m", 13, 10, 0
+
+homeclear	.text ESC, "[2J", ESC, "[H", 0
 
 *=$7ffa
 		.byte $c0,$01	; nmi
