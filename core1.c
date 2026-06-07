@@ -36,7 +36,7 @@ void __not_in_flash_func(core1_entry)()
     serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
 
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
-    serial_program_puts(serial_pio, serial_sm, "\033[2J\033[H");    // clear the terminal
+    serial_program_puts(serial_pio, serial_sm, "\033[2J\033[H\033[?25h");    // clear the terminal, home, cursor on
 
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
     serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
@@ -76,6 +76,7 @@ void __not_in_flash_func(core1_entry)()
             // Only update memory if an actual character was received (ch != -1)
             if (ch != -1)
             {
+                if (ch=='\\') C64_text_mode_loop();
                 *byte_to_6502 = (uint8_t)ch;
             }
         }
@@ -86,21 +87,41 @@ void __not_in_flash_func(core1_entry)()
 
 void __not_in_flash_func(C64_text_mode_loop)(void)
 {
+    // Ensure the PIO is in TX mode for the bulk transfer
+    serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+    in_tx_mode = true;
+
+    // Reset cursor to the top-left home position
+    serial_program_puts(serial_pio, serial_sm, "\033[?25l\033[2J");     // cursor off, clear screen
+    serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
+
+
     while (1)
     {
         // Ensure the PIO is in TX mode for the bulk transfer
         serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
         in_tx_mode = true;
 
+        // Reset cursor to the top-left home position
+        serial_program_puts(serial_pio, serial_sm, "\033[H");           // Home
+        serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
+
         for (size_t i = 0; i < C64_SCREEN_SIZE; ++i)
         {
             uint8_t data = sram[C64_SCREEN_ADDR + i];
             
             // Send data using the PIO state machine
-            serial_program_putc(serial_pio, serial_sm, data);
+            if (data!=0) serial_program_putc(serial_pio, serial_sm, data);
             
             // Wait for the character to be physically shifted out to avoid FIFO overflow
             serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
+
+            // Add a carriage return and newline after every 40 characters
+            if ((i + 1) % 40 == 0)
+            {
+                serial_program_puts(serial_pio, serial_sm, "\r\n");
+                serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
+            }
         }
 
         // Small delay between screen refreshes to avoid saturating the serial link

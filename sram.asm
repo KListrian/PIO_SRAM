@@ -8,10 +8,6 @@ ptr      = $20
 range_ptr = $22
 limit_ptr = $24
 
-*=$0000
-start	ldx #$77
-	jmp	start
-
 *=$01c0
 reset_entry:
         lda #<homeclear
@@ -103,6 +99,12 @@ tx_wait:lda status      ; Wait for Pi to finish
         bne tx_wait
         rts
 
+*=$0400
+ ;             1234567890123456789012345678901234567890
+ scrmem .text "      *** 6502 Retro processor ***      "
+        .text "READY"
+
+
 *=$1c00
         .byte $00       ; reserved for byte_out
         .byte $00       ; reserved for status
@@ -110,11 +112,8 @@ tx_wait:lda status      ; Wait for Pi to finish
 
 ESC = $1B
 
-resettext 	.text ESC, "[36m", "*** 6502 Retro processor ***", ESC, "[0m", 13, 10
-		  	.text "Ready", 13, 10, 0
-
+resettext 	.text ESC, "[36m", "6502 resetted, message over serial", ESC, "[0m", 13, 10, 0
 helloworld	.text ESC, "[36m", "Hello World!", ESC, "[0m", 13, 10, 0
-
 homeclear	.text ESC, "[2J", ESC, "[H", 0
 
 *=$7ffa
