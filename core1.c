@@ -10,6 +10,14 @@
 #define SERIAL_PIN 26
 #define SERIAL_BAUD 115200
 
+#define C64_SCREEN_ADDR 0x0400
+#define C64_SCREEN_SIZE 1000
+
+static PIO serial_pio;
+static uint serial_sm;
+static uint serial_rx_sm;
+static bool in_tx_mode = false;
+
 static void software_reset()
 {
     watchdog_enable(1, 1);
@@ -18,11 +26,11 @@ static void software_reset()
 
 void __not_in_flash_func(core1_entry)()
 {
-    PIO serial_pio = pio1;
+    serial_pio = pio1;
     uint serial_offset = pio_add_program(serial_pio, &serial_program);
     uint serial_rx_offset = pio_add_program(serial_pio, &serial_rx_program);
-    uint serial_sm = pio_claim_unused_sm(serial_pio, true);
-    uint serial_rx_sm = pio_claim_unused_sm(serial_pio, true);
+    serial_sm = pio_claim_unused_sm(serial_pio, true);
+    serial_rx_sm = pio_claim_unused_sm(serial_pio, true);
     serial_program_init(serial_pio, serial_sm, serial_offset, SERIAL_PIN, SERIAL_BAUD);
     serial_rx_program_init(serial_pio, serial_rx_sm, serial_rx_offset, SERIAL_PIN, SERIAL_BAUD);
     serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
@@ -36,8 +44,6 @@ void __not_in_flash_func(core1_entry)()
     volatile uint8_t *byte_from_6502 = &sram[0x1c00];           // byte points ta memory location voliatile makes sure it passes between cores
     volatile uint8_t *byte_from_6502_status = &sram[0x1c01];    // tr_status points ta memory location voliatile makes sure it passes between cores
     volatile uint8_t *byte_to_6502 = &sram[0x1c02];             // byte points ta memory location voliatile makes sure it passes between cores
-
-    bool in_tx_mode = false;
 
     while (true)
     {
@@ -75,5 +81,29 @@ void __not_in_flash_func(core1_entry)()
         }
 
         tight_loop_contents();
+    }
+}
+
+void __not_in_flash_func(C64_text_mode_loop)(void)
+{
+    while (1)
+    {
+        // Ensure the PIO is in TX mode for the bulk transfer
+        serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+        in_tx_mode = true;
+
+        for (size_t i = 0; i < C64_SCREEN_SIZE; ++i)
+        {
+            uint8_t data = sram[C64_SCREEN_ADDR + i];
+            
+            // Send data using the PIO state machine
+            serial_program_putc(serial_pio, serial_sm, data);
+            
+            // Wait for the character to be physically shifted out to avoid FIFO overflow
+            serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
+        }
+
+        // Small delay between screen refreshes to avoid saturating the serial link
+        sleep_ms(50);
     }
 }

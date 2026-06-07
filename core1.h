@@ -8,4 +8,10 @@
  */
 void core1_entry(void);
 
+/**
+ * @brief Enters a continuous loop that reads 1000 bytes of C64 screen memory
+ * ($0400..$07E7) and sends them to the serial PIO.
+ */
+void __not_in_flash_func(C64_text_mode_loop)(void);
+
 #endif // CORE1_H
