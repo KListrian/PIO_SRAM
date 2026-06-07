@@ -35,7 +35,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(PIO_SRAM PIO_SRAM.c sram.S core1.c SerialMonitor.c C64Display.c)
+add_executable(PIO_SRAM PIO_SRAM.c sram.S core1.c)
 
 pico_set_program_name(PIO_SRAM "PIO_SRAM")
 pico_set_program_version(PIO_SRAM "0.1")
