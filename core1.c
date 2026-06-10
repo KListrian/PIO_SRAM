@@ -52,7 +52,8 @@ void __not_in_flash_func(core1_entry)()
         // 1. Check if the 6502 has placed a byte for us to send to the terminal
         if (*byte_from_6502_status == 1)
         {
-            if (!in_tx_mode) {
+            if (!in_tx_mode)
+            {
                 serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
                 in_tx_mode = true;
             }
@@ -65,7 +66,8 @@ void __not_in_flash_func(core1_entry)()
         else
         {
             // 2. Otherwise, check for terminal input. Only switch to RX if needed.
-            if (in_tx_mode) {
+            if (in_tx_mode)
+            {
                 serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
                 in_tx_mode = false;
             }
@@ -76,8 +78,8 @@ void __not_in_flash_func(core1_entry)()
             // Only update memory if an actual character was received (ch != -1)
             if (ch != -1)
             {
-                if (ch=='\\') C64_text_mode_loop();
-                *byte_to_6502 = (uint8_t)ch;
+                if (ch==27) C64_text_screen_update();           // esc to print C64 screen buffer
+                else *byte_to_6502 = (uint8_t)ch;
             }
         }
 
@@ -85,46 +87,32 @@ void __not_in_flash_func(core1_entry)()
     }
 }
 
-void __not_in_flash_func(C64_text_mode_loop)(void)
+void __not_in_flash_func(C64_text_screen_update)(void)
 {
     // Ensure the PIO is in TX mode for the bulk transfer
     serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
     in_tx_mode = true;
-
-    // Reset cursor to the top-left home position
-    serial_program_puts(serial_pio, serial_sm, "\033[?25l\033[2J");     // cursor off, clear screen
+    serial_program_puts(serial_pio, serial_sm, "\033[?25l\033[H");     // cursor off, clear screen, home
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
 
-
-    while (1)
+    for (size_t i = 0; i < C64_SCREEN_SIZE; ++i)
     {
-        // Ensure the PIO is in TX mode for the bulk transfer
-        serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-        in_tx_mode = true;
-
-        // Reset cursor to the top-left home position
-        serial_program_puts(serial_pio, serial_sm, "\033[H");           // Home
+        uint8_t data = sram[C64_SCREEN_ADDR + i];
+        
+        // Send data using the PIO state machine
+        if (data!=0) serial_program_putc(serial_pio, serial_sm, data);
+        
+        // Wait for the character to be physically shifted out to avoid FIFO overflow
         serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
 
-        for (size_t i = 0; i < C64_SCREEN_SIZE; ++i)
+        // Add a carriage return and newline after every 40 characters
+        if ((i + 1) % 40 == 0)
         {
-            uint8_t data = sram[C64_SCREEN_ADDR + i];
-            
-            // Send data using the PIO state machine
-            if (data!=0) serial_program_putc(serial_pio, serial_sm, data);
-            
-            // Wait for the character to be physically shifted out to avoid FIFO overflow
+            serial_program_puts(serial_pio, serial_sm, "\r\n");
             serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
-
-            // Add a carriage return and newline after every 40 characters
-            if ((i + 1) % 40 == 0)
-            {
-                serial_program_puts(serial_pio, serial_sm, "\r\n");
-                serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
-            }
         }
-
-        // Small delay between screen refreshes to avoid saturating the serial link
-        sleep_ms(50);
     }
+
+    serial_program_puts(serial_pio, serial_sm, "\033[?25h");     // cursor on
+    serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
 }
