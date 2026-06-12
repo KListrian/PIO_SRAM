@@ -24,7 +24,7 @@ int __not_in_flash_func(main)()
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
     gpio_put(PICO_DEFAULT_LED_PIN, 0);
-    busy_wait_ms(500);
+    busy_wait_ms(400);                                  // this is a very important line!
 
     multicore_launch_core1(core1_entry);
 
