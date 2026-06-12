@@ -78,7 +78,7 @@ void __not_in_flash_func(core1_entry)()
             // Only update memory if an actual character was received (ch != -1)
             if (ch != -1)
             {
-                if (ch==27) C64_text_screen_update();           // esc to print C64 screen buffer
+                if (ch==4) C64_text_screen_update();           // 4=^d to print C64 screen buffer
                 else *byte_to_6502 = (uint8_t)ch;
             }
         }
