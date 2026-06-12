@@ -22,11 +22,20 @@ reset_entry:
         sta ptr+1
         jsr send_str
 
+strt            lda #'a'
+                sta scrmem
 inf	        lda byte_in     ; check for byte in
 	        cmp #97         ; 'a' key to trigger send hello world
-	        bne inf
-	        lda #0
-	        sta byte_in     ; clear byte_in
+	        beq sndhlo
+                inc scrmem
+                lda scrmem
+                cmp #'z'
+                beq strt
+                jmp inf
+
+
+sndhlo  lda #0
+        sta byte_in     ; clear byte_in
         
         lda #<helloworld
         sta ptr
