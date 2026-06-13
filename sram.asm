@@ -135,7 +135,7 @@ tx_wait:lda status      ; Wait for Pi to finish
         .text "1234567890123456789012345678901234567890"
         .text "1234567890123456789012345678901234567890"
         .text "12345678901234567890123456789012345678AA"
-
+        .byte $00       ; null terminator for scrmem
 
 *=$1c00
         .byte $00       ; reserved for byte_out
