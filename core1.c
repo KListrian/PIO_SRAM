@@ -23,10 +23,10 @@ static void software_reset()
     // Ensure the PIO is in TX mode for the bulk transfer
     serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
     in_tx_mode = true;
-    serial_program_puts(serial_pio, serial_sm, "\r\nPico reset");     // cursor off, clear screen, home
+    serial_program_puts(serial_pio, serial_sm, "\r\nPico reseted");     // cursor off, clear screen, home
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
 
-    watchdog_enable(50, 1);
+    watchdog_enable(200, 1);
     while(1); 
 }
 
@@ -105,10 +105,10 @@ void __not_in_flash_func(C64_text_screen_update)(void)
     serial_program_puts(serial_pio, serial_sm, "\033[?25l\033[H");     // cursor off, clear screen, home
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
 
-    serial_program_puts(serial_pio, serial_sm, &sram[C64_SCREEN_ADDR]);     // cursor off, clear screen, home
-    serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
+//    serial_program_puts(serial_pio, serial_sm, &sram[C64_SCREEN_ADDR]);
+//    serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
 
-    /*
+    
     for (size_t i = 0; i < C64_SCREEN_SIZE; ++i)
     {
         uint8_t data = sram[C64_SCREEN_ADDR + i];
@@ -125,7 +125,7 @@ void __not_in_flash_func(C64_text_screen_update)(void)
             serial_program_puts(serial_pio, serial_sm, "\r\n");
             serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
         }
-    }*/
+    }
 
     serial_program_puts(serial_pio, serial_sm, "\033[?25h");     // cursor on
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
