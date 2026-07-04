@@ -145,7 +145,7 @@ tx_wait:lda status      ; Wait for Pi to finish
 ESC = $1B
 
 resettext 	.text ESC, "[36m", "6502 resetted, message over serial", ESC, "[0m", 13, 10, 0
-helloworld	.text ESC, "[36m", "Hello World!", ESC, "[0m", 13, 10, 0
+helloworld	.text ESC, "[36m", "Meddelande från 6502", ESC, "[0m", 13, 10, 0
 homeclear	.text ESC, "[2J", ESC, "[H", 0
 
 *=$7ffa
