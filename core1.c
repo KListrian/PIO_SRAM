@@ -18,7 +18,7 @@ static uint serial_sm;
 static uint serial_rx_sm;
 static bool in_tx_mode = false;
 
-static void software_reset()
+static void pico_reset()
 {
     // Ensure the PIO is in TX mode for the bulk transfer
     serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
@@ -85,14 +85,11 @@ void __not_in_flash_func(core1_entry)()
             if (ch != -1)
             {
                 if (ch==4) C64_text_screen_update();            // 4=^d to print C64 screen buffer
-                else if (ch==1) software_reset();               // 1=^a
+                else if (ch==1) pico_reset();               // 1=^a
                 else *byte_to_6502 = (uint8_t)ch;
             }
         }
 
-//        busy_wait_ms(100);
-//        C64_text_screen_update();
-//        busy_wait_ms(100);
         tight_loop_contents();
     }
 }
@@ -104,11 +101,7 @@ void __not_in_flash_func(C64_text_screen_update)(void)
     in_tx_mode = true;
     serial_program_puts(serial_pio, serial_sm, "\033[?25l\033[H");     // cursor off, clear screen, home
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
-
-//    serial_program_puts(serial_pio, serial_sm, &sram[C64_SCREEN_ADDR]);
-//    serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
-
-    
+ 
     for (size_t i = 0; i < C64_SCREEN_SIZE; ++i)
     {
         uint8_t data = sram[C64_SCREEN_ADDR + i];
