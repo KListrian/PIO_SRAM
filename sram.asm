@@ -28,6 +28,8 @@ inf	        lda byte_in     ; check for byte in
 	        cmp #97         ; 'a' key to trigger send hello world
 	        beq sndhlo
                 inc scrmem
+                lda #02
+                sta status      ; signal Pi refresh screen
                 lda scrmem
                 cmp #'z'
                 beq strt

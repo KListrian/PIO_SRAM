@@ -56,38 +56,49 @@ void __not_in_flash_func(core1_entry)()
         gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);  // toggle led
 
         // 1. Check if the 6502 has placed a byte for us to send to the terminal
-        if (*byte_from_6502_status == 1)
+        switch (*byte_from_6502_status)
         {
-            if (!in_tx_mode)
-            {
-                serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-                in_tx_mode = true;
-            }
-            serial_program_putc(serial_pio, serial_sm, *byte_from_6502);
-            serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
-            
-            // Clear status to signal 6502 that it can send the next character
-            *byte_from_6502_status = 0;
-        }
-        else
-        {
-            // 2. Otherwise, check for terminal input. Only switch to RX if needed.
-            if (in_tx_mode)
-            {
-                serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-                in_tx_mode = false;
-            }
+            case 1:                 // byte to send
+                if (!in_tx_mode)
+                {
+                    serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+                    in_tx_mode = true;
+                }
+                serial_program_putc(serial_pio, serial_sm, *byte_from_6502);
+                serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
+                // Clear status to signal 6502 that it can send the next character
+                *byte_from_6502_status = 0;
+            break;
 
-            // Use a short timeout to keep the loop responsive to the 6502
-            int ch = serial_rx_program_getc_timeout_us(serial_pio, serial_rx_sm, 10);
-            
-            // Only update memory if an actual character was received (ch != -1)
-            if (ch != -1)
-            {
-                if (ch==4) C64_text_screen_update();            // 4=^d to print C64 screen buffer
-                else if (ch==1) pico_reset();               // 1=^a
-                else *byte_to_6502 = (uint8_t)ch;
-            }
+            case 2:                 // screen need refresh
+                if (!in_tx_mode)
+                {
+                    serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+                    in_tx_mode = true;
+                }
+                C64_text_screen_update();
+                *byte_from_6502_status = 0;
+            break;
+
+            default:                // if nothing from 6502 check terminal inoput and store to 6602
+                // 3. Otherwise, check for terminal input. Only switch to RX if needed.
+                if (in_tx_mode)
+                {
+                    serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
+                    in_tx_mode = false;
+                }
+
+                // Use a short timeout to keep the loop responsive to the 6502
+                int ch = serial_rx_program_getc_timeout_us(serial_pio, serial_rx_sm, 10);
+                
+                // Only update memory if an actual character was received (ch != -1)
+                if (ch != -1)
+                {
+                    if (ch==1)
+                        pico_reset();               // 1=^a reset the pico
+                    else
+                        *byte_to_6502 = (uint8_t)ch;
+                }
         }
 
         tight_loop_contents();
@@ -96,9 +107,6 @@ void __not_in_flash_func(core1_entry)()
 
 void __not_in_flash_func(C64_text_screen_update)(void)
 {
-    // Ensure the PIO is in TX mode for the bulk transfer
-    serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-    in_tx_mode = true;
     serial_program_puts(serial_pio, serial_sm, "\033[?25l\033[H");     // cursor off, clear screen, home
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
  
@@ -119,7 +127,4 @@ void __not_in_flash_func(C64_text_screen_update)(void)
             serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
         }
     }
-
-    serial_program_puts(serial_pio, serial_sm, "\033[?25h");     // cursor on
-    serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
 }
