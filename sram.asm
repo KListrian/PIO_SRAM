@@ -26,15 +26,20 @@ strt            lda #'a'
                 sta scrmem
 inf	        lda byte_in     ; check for byte in
 	        cmp #97         ; 'a' key to trigger send hello world
-	        beq sndhlo
-                inc scrmem
-                lda #02
-                sta status      ; signal Pi refresh screen
+	        beq okaa
+
+back            lda #0
+                sta byte_in     ; clear byte_in
+
                 lda scrmem
                 cmp #'z'
                 beq strt
                 jmp inf
 
+okaa    inc scrmem
+        lda #02
+        sta status      ; signal Pi refresh screen
+        jmp back
 
 sndhlo  lda #0
         sta byte_in     ; clear byte_in
