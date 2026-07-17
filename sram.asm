@@ -24,21 +24,25 @@ reset_entry:
 
 strt            lda #'a'
                 sta scrmem
-inf             lda byte_in     ; check for byte in
-                beq inf         ; if 0, keep waiting
-                pha             ; save character
-                lda #0
-                sta byte_in     ; clear byte_in immediately
-                pla             ; restore character
-                cmp #97         ; 'a' key?
-                bne inf         ; if not 'a', ignore and loop back
-                
-                ; Increment first byte of screen (scrmem)
+inf	        lda byte_in     ; check for byte in
+	        cmp #97         ; 'a' key to trigger send hello world
+	        beq sndhlo
                 inc scrmem
                 lda scrmem
-                cmp #'z'        ; check if we reached 'z'
-                bne inf         ; if not, loop back
-                jmp strt        ; reset to 'a'
+                cmp #'z'
+                beq strt
+                jmp inf
+
+
+sndhlo  lda #0
+        sta byte_in     ; clear byte_in
+        
+        lda #<helloworld
+        sta ptr
+        lda #>helloworld
+        sta ptr+1
+        jsr send_str
+        jmp inf
 
 ; Subroutine: send_str
 ; Argument: Pointer to null-terminated string in 'ptr' ($20/$21)
