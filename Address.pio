@@ -17,6 +17,13 @@ sample_data:
     jmp pin do_sample   ; Only sample data while PHI2 is still high
     mov isr, x          ; Last data sample taken before PHI2 was observed low
     push block
+    ; Explicitly synchronize to the low phase before sampling the external
+    ; buffer. The delay gives the buffer time to take ownership of GPIO 0-7
+    ; after the Pico releases the bus.
+    wait 0 gpio 28 [8]
+    mov isr, null
+    in pins, 8
+    push block          ; Third FIFO word: buffered data after the falling edge
     jmp cycle_done
 
 do_sample:

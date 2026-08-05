@@ -49,6 +49,7 @@ int __not_in_flash_func(main)()
     const uint32_t data_mask = 0xFF;
     const uint32_t clock_pin_mask = (1u << 28);
     const uint32_t rw_mask = (1u << 27);
+    volatile uint8_t buffered_data_low = 0;
 
     // Start the address sampler from a known-empty FIFO.
     pio_sm_set_enabled(pio, sm, false);
@@ -84,11 +85,13 @@ int __not_in_flash_func(main)()
             
             sio_hw->gpio_oe_clr = data_mask;
 
-            // The PIO emits a second word every cycle: the last data sample
-            // taken while PHI2 was high. Reads do not use it, but consuming it
-            // keeps the FIFO stream aligned on the next address sample.
+            // Preserve the existing second FIFO word, then store the buffer
+            // byte sampled after PHI2's falling edge.
             while (pio_sm_is_rx_fifo_empty(pio, sm));
             (void)*pio_fifo;
+            while (pio_sm_is_rx_fifo_empty(pio, sm));
+            buffered_data_low = (uint8_t)(*pio_fifo & data_mask);
+            sram[0x0402]=buffered_data_low;
 //            printf("Read: %02X address: %04X\n",sram[address],address);
         }
         else
@@ -98,6 +101,10 @@ int __not_in_flash_func(main)()
             while (pio_sm_is_rx_fifo_empty(pio, sm));
             uint32_t data_raw = *pio_fifo;
             sram[address] = (uint8_t)(data_raw & data_mask);
+            // Store the external buffer's byte sampled after PHI2 fell.
+            while (pio_sm_is_rx_fifo_empty(pio, sm));
+            buffered_data_low = (uint8_t)(*pio_fifo & data_mask);
+            sram[0x0402]=buffered_data_low;
 //            printf("Write: %02X address: %04X\n", sram[address], address);
         }
     }
