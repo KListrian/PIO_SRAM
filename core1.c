@@ -8,7 +8,8 @@
 #include "core1.h"
 
 #define SERIAL_PIN 26
-#define SERIAL_BAUD 115200
+//#define SERIAL_BAUD 115200
+#define SERIAL_BAUD 200000
 
 #define C64_SCREEN_ADDR 0x0400
 #define C64_SCREEN_SIZE 1000
@@ -50,6 +51,8 @@ void __not_in_flash_func(core1_entry)()
     volatile uint8_t *byte_from_6502 = &sram[0x1c00];           // byte points ta memory location voliatile makes sure it passes between cores
     volatile uint8_t *byte_from_6502_status = &sram[0x1c01];    // tr_status points ta memory location voliatile makes sure it passes between cores
     volatile uint8_t *byte_to_6502 = &sram[0x1c02];             // byte points ta memory location voliatile makes sure it passes between cores
+    uint32_t screen_update_counter = 0;
+    bool bDraw = false;
 
     while (true)
     {
@@ -84,10 +87,16 @@ void __not_in_flash_func(core1_entry)()
             // Only update memory if an actual character was received (ch != -1)
             if (ch != -1)
             {
-                if (ch==4) C64_text_screen_update();            // 4=^d to print C64 screen buffer
+                if (ch==4) bDraw = !bDraw;                  // 4=^d
                 else if (ch==1) pico_reset();               // 1=^a
                 else *byte_to_6502 = (uint8_t)ch;
             }
+        }
+
+        if ((++screen_update_counter >= 10000))
+        {
+            if (bDraw==true) C64_text_screen_update();
+            screen_update_counter = 0;
         }
 
         tight_loop_contents();
@@ -120,6 +129,6 @@ void __not_in_flash_func(C64_text_screen_update)(void)
         }
     }
 
-    serial_program_puts(serial_pio, serial_sm, "\033[?25h");     // cursor on
+//    serial_program_puts(serial_pio, serial_sm, "\033[?25h");     // cursor on
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
 }
