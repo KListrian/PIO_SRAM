@@ -116,6 +116,82 @@
       "group": "build",
       "type": "process",
       "command": "c:/tmp/64tass.exe"
+    },
+    {
+      "label": "Compile wozmon.asm",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "args": [
+        "-f",
+        "wozmon.asm",
+        "-o",
+        "sram.bin"
+      ],
+      "group": "build",
+      "type": "process",
+      "command": "c:/tmp/64tass.exe"
+    },
+    {
+      "label": "Clean Build",
+      "type": "shell",
+      "command": "Remove-Item",
+      "args": [
+        "-Recurse",
+        "-Force",
+        "${workspaceFolder}/build"
+      ],
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "Remove-Item -Recurse -Force '${workspaceFolder}/build'"
+        ]
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Configure CMake",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-B",
+        "${workspaceFolder}/build",
+        "-G",
+        "Ninja",
+        "-DCMAKE_BUILD_TYPE=Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build wozmon & Link & Flash",
+      "type": "shell",
+      "dependsOn": [
+        "Clean Build",
+        "Configure CMake",
+        "Compile wozmon.asm",
+        "Compile Project",
+        "Flash"
+      ],
+      "dependsOrder": "sequence",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
     }
   ]
 }

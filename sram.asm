@@ -1,6 +1,6 @@
 ; --- Hardware Register Definitions ---
 byte_out = $1C00
-status   = $1C01
+status   = $1C01        ;status_out: 0 = ready, 1 = busy
 byte_in  = $1C02
 
 ; --- Zero Page ---
@@ -101,9 +101,9 @@ conv_send:
         adc #$06        ; Convert to A-F (Carry is set)
 is_num: adc #$30        ; Convert to '0'-'9'
 send_char:
-        sta byte_out
-        lda #$01
-        sta status      ; Signal Pi to send
+        sta byte_out    ; store byte to send
+        lda #$01        ; tell there is a byte to send
+        sta status      ; Signal Pi that a byte is ready
 tx_wait:lda status      ; Wait for Pi to finish
         bne tx_wait
         rts
