@@ -27,7 +27,7 @@ RESET:
                 CLI
                 LDY #$7F        ; Mask for DSP data direction register.
 
-NOTCR:          CMP #$08        ; Backspace?
+NOTCR:          CMP #$7F        ; Backspace?    08 eller 7F
                 BEQ BACKSPACE   ; Yes.
                 CMP #$1B        ; ESC?
                 BEQ ESCAPE      ; Yes.
