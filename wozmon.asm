@@ -49,7 +49,7 @@ NEXTCHAR:       LDA byte_in     ; Key ready?
                 LDX #$00        ; Clear X for text buffer index.
                 STX byte_in     ; Clear input ready flag.
                 STA IN,Y        ; Add to text buffer.
-;                JSR ECHO        ; Display character.       ; comment away to disable echoing of input characters
+                JSR ECHO        ; Display character.       ; comment away to disable echoing of input characters
                 CMP #$0D        ; CR?
                 BNE NOTCR       ; No.
 
