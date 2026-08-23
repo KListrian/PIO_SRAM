@@ -29,7 +29,7 @@ RESET:
 
 NOTCR:          CMP #$7F        ; Backspace?    08 eller 7F
                 BEQ BACKSPACE   ; Yes.
-                CMP #$1B        ; ESC?
+                CMP #$02        ; ESC?
                 BEQ ESCAPE      ; Yes.
                 INY             ; Advance text index.
                 BPL NEXTCHAR    ; Auto ESC if > 127.
