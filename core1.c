@@ -51,8 +51,6 @@ void __not_in_flash_func(core1_entry)()
     volatile uint8_t *byte_from_6502 = &sram[0x1c00];           // byte points ta memory location voliatile makes sure it passes between cores
     volatile uint8_t *byte_from_6502_status = &sram[0x1c01];    // tr_status points ta memory location voliatile makes sure it passes between cores
     volatile uint8_t *byte_to_6502 = &sram[0x1c02];             // byte points ta memory location voliatile makes sure it passes between cores
-//    uint32_t screen_update_counter = 0;
-//    bool bDraw = false;
 
     while (true)
     {
@@ -96,9 +94,6 @@ void __not_in_flash_func(core1_entry)()
         tight_loop_contents();
     }
 }
-
-
-
 
 void __not_in_flash_func(C64_text_screen_update)(void)
 {
