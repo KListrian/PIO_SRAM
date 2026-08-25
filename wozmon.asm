@@ -17,7 +17,7 @@ IN              = $0200         ;  Input buffer to $027F
 
 ; --- Hardware Register Definitions ---
 byte_out = $1C00
-status   = $1C01        ;status_out: 0 = ready, 1 = busy
+status   = $1C01        ;status_out: 0 = empty, 1 = there is a byte
 
 byte_in  = $1C02
 
