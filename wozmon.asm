@@ -1,5 +1,7 @@
 ;  The WOZ Monitor for the Apple 1
-;  Written by Steve Wozniak in 1976
+;  Written by the great Steve Wozniak in 1976
+
+; 0300: A9 41 20 E9 7F 4C 00 7F, testprogram som laddar A till Acc och anropar ECHO på $7FE9
 
 ; Page 0 Variables
 XAML            = $24           ;  Last "opened" location Low
@@ -11,7 +13,6 @@ H               = $29           ;  Hex value parsing High
 YSAV            = $2A           ;  Used to see if hex value is given
 MODE            = $2B           ;  $00=XAM, $7F=STOR, $AE=BLOCK XAM
 
-; Other Variables
 IN              = $0200         ;  Input buffer to $027F
 
 ; --- Hardware Register Definitions ---
@@ -29,7 +30,7 @@ RESET:
 
 NOTCR:          CMP #$7F        ; Backspace?    08 eller 7F
                 BEQ BACKSPACE   ; Yes.
-                CMP #$02        ; ESC?
+                CMP #$02        ; ESC? ctrl-b special
                 BEQ ESCAPE      ; Yes.
                 INY             ; Advance text index.
                 BPL NEXTCHAR    ; Auto ESC if > 127.
@@ -46,8 +47,10 @@ BACKSPACE:      DEY             ; Back up text index.
 
 NEXTCHAR:       LDA byte_in     ; Key ready?
                 BEQ NEXTCHAR    ; Loop until ready.
-                LDX #$00        ; Clear X for text buffer index.
-                STX byte_in     ; Clear input ready flag.
+                PHA
+                LDA #$00        ; Clear X for text buffer index. <- new
+                STA byte_in     ; Clear input ready flag.        <- new
+                PLA
                 STA IN,Y        ; Add to text buffer.
                 JSR ECHO        ; Display character.       ; comment away to disable echoing of input characters
                 CMP #$0D        ; CR?
