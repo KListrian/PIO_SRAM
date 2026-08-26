@@ -127,7 +127,9 @@
         "-f",
         "wozmon.asm",
         "-o",
-        "sram.bin"
+        "sram.bin",
+        "-l",
+        "c:/tmp/wozmon.lst"
       ],
       "group": "build",
       "type": "process",
@@ -175,23 +177,5 @@
       },
       "problemMatcher": []
     },
-    {
-      "label": "Build wozmon & Link & Flash",
-      "type": "shell",
-      "dependsOn": [
-        "Clean Build",
-        "Configure CMake",
-        "Compile wozmon.asm",
-        "Compile Project",
-        "Flash"
-      ],
-      "dependsOrder": "sequence",
-      "group": "build",
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated"
-      },
-      "problemMatcher": []
-    }
   ]
 }

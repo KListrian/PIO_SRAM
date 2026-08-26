@@ -3,6 +3,9 @@
 
 ; 0300: A9 41 20 E9 7F 4C 00 7F, testprogram som laddar A till Acc och anropar ECHO på $7FE9
 
+; CPU
+.cpu "6502"
+
 ; Page 0 Variables
 XAML            = $24           ;  Last "opened" location Low
 XAMH            = $25           ;  Last "opened" location High
