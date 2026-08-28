@@ -136,6 +136,16 @@
       "command": "c:/tmp/64tass.exe"
     },
     {
+      "label": "Compile and Link wozmon.asm using cc65 toolchain",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "group": "build",
+      "type": "shell",
+      "command": "c:/tmp/ca65.exe wozmon.asm -o c:/tmp/wozmon.o && c:/tmp/ld65.exe c:/tmp/wozmon.o -C bios.cfg -o sram.bin -Ln c:/tmp/wozmon.lst"
+    }
+    {
       "label": "Clean Build",
       "type": "shell",
       "command": "Remove-Item",

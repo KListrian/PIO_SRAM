@@ -1,11 +1,25 @@
 ;  The WOZ Monitor for the Apple 1
 ;  Written by the great Steve Wozniak in 1976
 
-; 0300: A9 41 20 E9 7F 4C 00 7F, testprogram som laddar A till Acc och anropar ECHO på $7FE9
+; 0300: A9 41 20 E6 7F 4C 00 7F, testprogram som laddar A till Acc och anropar ECHO på $7FE9
 
 ; CPU
-.cpu "6502"
+.setcpu "6502"
+.debuginfo
 
+.segment "BIOS"
+
+CHRIN:
+                LDA byte_in     ; Check if a byte is ready.
+                BEQ @no_keypressed ; No, return with A=0.
+                jsr CHROUT      ; Yes, output it.
+                sec
+                rts
+@no_keypressed: 
+                CLC
+                rts
+
+.segment "WOZMON"
 ; Page 0 Variables
 XAML            = $24           ;  Last "opened" location Low
 XAMH            = $25           ;  Last "opened" location High
@@ -16,15 +30,13 @@ H               = $29           ;  Hex value parsing High
 YSAV            = $2A           ;  Used to see if hex value is given
 MODE            = $2B           ;  $00=XAM, $7F=STOR, $AE=BLOCK XAM
 
+; Serial I/O Variables
+byte_out        = $0100         ;  byte_out = $1C00
+status          = $0101         ;  status   = $1C01        ;status_out: 0 = empty, 1 = there is a byte
+byte_in         = $0102         ;  byte_in  = $1C02
+hw_buffer       = $0103         ;  buffer 74HC541 hardwired
+
 IN              = $0200         ;  Input buffer to $027F
-
-; --- Hardware Register Definitions ---
-byte_out = $1C00
-status   = $1C01        ;status_out: 0 = empty, 1 = there is a byte
-
-byte_in  = $1C02
-
-*=$7F00
 
 RESET:
                 CLD             ; Clear decimal arithmetic mode.
@@ -174,18 +186,19 @@ PRHEX:          AND #$0F        ; Mask LSD for hex print.
                 BCC ECHO        ; Yes, output it.
                 ADC #$06        ; Add offset for letter.
 
+CHROUT:
 ECHO:           
                 PHA             ; Save A for echo wait.
                 STA byte_out    ; Output character.
                 LDA #$01        ; Tell there is a byte to send.
                 STA status      ; Signal Pi that a byte is ready.
-wait_echo:      LDA status      ; Check if output is ready.
-                BNE wait_echo
+@wait_echo:     LDA status      ; Check if output is ready.
+                BNE @wait_echo
                 PLA             ; Restore A.
                 RTS             ; Return.
 
 ; Interrupt Vectors
-*=$7ffa
-		.byte $00,$7f	; nmi
-		.byte $00,$7f	; reset
-		.byte $00,$7f	; irq
+.segment "RESETVEC"
+		.word RESET 	; nmi
+		.word RESET	    ; reset
+		.word RESET 	; irq

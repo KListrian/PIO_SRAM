@@ -48,9 +48,13 @@ void __not_in_flash_func(core1_entry)()
     serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
     serial_program_set_rx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
 
-    volatile uint8_t *byte_from_6502 = &sram[0x1c00];           // byte to from 6502 to serial interface
-    volatile uint8_t *byte_from_6502_status = &sram[0x1c01];    // status of byte from 6502. 1 = there is a byte ready to read. clear it when read
-    volatile uint8_t *byte_to_6502 = &sram[0x1c02];             // place byte here to 6502. 0 = no data, all else is data
+    // volatile uint8_t *byte_from_6502 = &sram[0x1c00];           // byte to from 6502 to serial interface
+    // volatile uint8_t *byte_from_6502_status = &sram[0x1c01];    // status of byte from 6502. 1 = there is a byte ready to read. clear it when read
+    // volatile uint8_t *byte_to_6502 = &sram[0x1c02];             // place byte here to 6502. 0 = no data, all else is data
+
+    volatile uint8_t *byte_from_6502 = &sram[0x0100];              // byte to from 6502 to serial interface
+    volatile uint8_t *byte_from_6502_status = &sram[0x0101];       // status of byte from 6502. 1 = there is a byte ready to read. clear it when read
+    volatile uint8_t *byte_to_6502 = &sram[0x0102];                // place byte here to 6502. 0 = no data, all else is data
 
     while (true)
     {

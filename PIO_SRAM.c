@@ -89,7 +89,7 @@ int __not_in_flash_func(main)()
             while (pio_sm_is_rx_fifo_empty(pio, sm));
             (void)*pio_fifo;
             while (pio_sm_is_rx_fifo_empty(pio, sm));
-            sram[0x00fe] = (uint8_t)(*pio_fifo & data_mask);        // 0x00cb C64
+            sram[0x0103] = (uint8_t)(*pio_fifo & data_mask);
         }
         else
         {
@@ -100,7 +100,7 @@ int __not_in_flash_func(main)()
             sram[address] = (uint8_t)(data_raw & data_mask);
             // Store the external buffer's byte sampled after PHI2 fell.
             while (pio_sm_is_rx_fifo_empty(pio, sm));
-            sram[0x00fe] = (uint8_t)(*pio_fifo & data_mask);        // 0x00cb C64
+            sram[0x0103] = (uint8_t)(*pio_fifo & data_mask);
         }
     }
 }
