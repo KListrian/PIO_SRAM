@@ -1,7 +1,7 @@
 ;  The WOZ Monitor for the Apple 1
 ;  Written by the great Steve Wozniak in 1976
 
-; 0300: A9 41 20 E6 7F 4C 00 7F, testprogram som laddar A till Acc och anropar ECHO på $7FE9
+; 0300: A9 41 20 E9 7F 4C 00 7F, testprogram som laddar A till Acc och anropar ECHO på $7FE9
 
 ; CPU
 .setcpu "6502"
