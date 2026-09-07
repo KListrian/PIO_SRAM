@@ -12,12 +12,16 @@
 CHRIN:
                 LDA byte_in     ; Check if a byte is ready.
                 BEQ @no_keypressed ; No, return with A=0.
-                jsr CHROUT      ; Yes, output it.
-                sec
-                rts
+                PHA             ; Save character
+                LDA #$00        ; Clear byte_in flag
+                STA byte_in
+                PLA             ; Restore character
+                JSR CHROUT      ; Echo to terminal (CHROUT preserves A)
+                SEC
+                RTS
 @no_keypressed: 
                 CLC
-                rts
+                RTS
 
 .segment "WOZMON"
 ; Page 0 Variables
@@ -31,10 +35,10 @@ YSAV            = $2A           ;  Used to see if hex value is given
 MODE            = $2B           ;  $00=XAM, $7F=STOR, $AE=BLOCK XAM
 
 ; Serial I/O Variables
-byte_out        = $0100         ;  byte_out = $1C00
-status          = $0101         ;  status   = $1C01        ;status_out: 0 = empty, 1 = there is a byte
-byte_in         = $0102         ;  byte_in  = $1C02
-hw_buffer       = $0103         ;  buffer 74HC541 hardwired
+byte_out        = $0280         ;  byte_out = $1C00
+status          = $0281         ;  status   = $1C01        ;status_out: 0 = empty, 1 = there is a byte
+byte_in         = $0282         ;  byte_in  = $1C02
+hw_buffer       = $0283         ;  buffer 74HC541 hardwired
 
 IN              = $0200         ;  Input buffer to $027F
 
