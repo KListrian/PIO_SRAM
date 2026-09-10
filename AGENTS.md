@@ -12,7 +12,7 @@ This file defines custom agents specialized for this Raspberry Pi Pico SRAM/PIO 
 
 ### SRAM Assembly Specialist
 - **Description**: Use when analyzing or fixing 64tass assembly code, particularly for SRAM operations
-- **Expertise**: 6502 assmbly code, 64tass syntax, memory addressing, low-level operations
+- **Expertise**: 6502 assmbly code, ca65 syntax, memory addressing, low-level operations
 - **Tools**: read, search, edit
 - **Purpose**: Read-only assembly analysis and debugging without execution
 
