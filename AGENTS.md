@@ -32,4 +32,5 @@ This file defines custom agents specialized for this Raspberry Pi Pico SRAM/PIO 
 - **ld65 executable**: `/c/tmp/ld65.exe` (Windows path: `c:/tmp/ld65.exe`)
 - **Assembly command**: `/c/tmp/ca65.exe`
 - **Linker command**: `/c/tmp/ld65.exe`
-- **Important**: Do not assume `64tass` is available on `PATH`; always use the absolute path above.
+- **Important**: Do not assume `ca65.exe` is available on `PATH`; always use the absolute path above.
+- **Important**: Do not assume `ld65.exe` is available on `PATH`; always use the absolute path above.
