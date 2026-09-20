@@ -56,7 +56,6 @@ int __not_in_flash_func(main)()
     pio_sm_restart(pio, sm);
     pio_sm_set_enabled(pio, sm, true);
 
-    // stdio_init_all();   // Initialize stdio (USB and UART if available)
     uint32_t ints = save_and_disable_interrupts();
     (void)ints;
 
@@ -84,12 +83,9 @@ int __not_in_flash_func(main)()
             
             sio_hw->gpio_oe_clr = data_mask;
 
-            // Preserve the existing second FIFO word, then store the buffer
-            // byte sampled after PHI2's falling edge.
+            // Discard the PIO's last data sample for this read cycle.
             while (pio_sm_is_rx_fifo_empty(pio, sm));
             (void)*pio_fifo;
-            while (pio_sm_is_rx_fifo_empty(pio, sm));
-            sram[0x0283] = (uint8_t)(*pio_fifo & data_mask);
         }
         else
         {
@@ -98,9 +94,6 @@ int __not_in_flash_func(main)()
             while (pio_sm_is_rx_fifo_empty(pio, sm));
             uint32_t data_raw = *pio_fifo;
             sram[address] = (uint8_t)(data_raw & data_mask);
-            // Store the external buffer's byte sampled after PHI2 fell.
-            while (pio_sm_is_rx_fifo_empty(pio, sm));
-            sram[0x0283] = (uint8_t)(*pio_fifo & data_mask);
         }
     }
 }
