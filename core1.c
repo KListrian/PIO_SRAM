@@ -84,8 +84,7 @@ void __not_in_flash_func(core1_entry)()
             // Only update memory if an actual character was received (ch != -1)
             if (ch != -1)
             {
-                if (ch==4) C64_text_screen_update();        // 4=^d
-                else if (ch==1) pico_reset();               // 1=^a
+                if (ch==1) pico_reset();               // 1=^a
                 else *byte_to_6502 = (uint8_t)ch;
             }
         }
@@ -94,29 +93,3 @@ void __not_in_flash_func(core1_entry)()
     }
 }
 
-void __not_in_flash_func(C64_text_screen_update)(void)
-{
-    // Ensure the PIO is in TX mode for the bulk transfer
-    serial_program_set_tx_mode(serial_pio, serial_sm, serial_rx_sm, SERIAL_PIN);
-    in_tx_mode = true;
-    serial_program_puts(serial_pio, serial_sm, "\033[?25l\033[H");     // cursor off, clear screen, home
-    serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
- 
-    for (size_t i = 0; i < C64_SCREEN_SIZE; ++i)
-    {
-        uint8_t data = sram[C64_SCREEN_ADDR + i];
-        
-        // Send data using the PIO state machine
-        if (data!=0) serial_program_putc(serial_pio, serial_sm, data);
-        
-        // Wait for the character to be physically shifted out to avoid FIFO overflow
-        serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
-
-        // Add a carriage return and newline after every 40 characters
-        if ((i + 1) % 40 == 0)
-        {
-            serial_program_putc(serial_pio, serial_sm, '\r');
-            serial_program_wait_tx_done(serial_pio, serial_sm, SERIAL_BAUD);
-        }
-    }
-}
